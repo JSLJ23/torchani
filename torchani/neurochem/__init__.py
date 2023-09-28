@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Tools for loading/running NeuroChem input files."""
+from typing import Optional
 
 import torch
 import os
@@ -255,7 +256,7 @@ def load_model(species, dir_):
     return ANIModel(models)
 
 
-def load_model_ensemble(species, prefix, count):
+def load_model_ensemble(species, prefix, count, model_indexes: Optional[list[int]] = None):
     """Returns an instance of :class:`torchani.Ensemble` loaded from
     NeuroChem's network directories beginning with the given prefix.
 
@@ -265,11 +266,16 @@ def load_model_ensemble(species, prefix, count):
         prefix (str): Prefix of paths of directory that networks configurations
             are stored.
         count (int): Number of models in the ensemble.
+        model_indexes (Optional[list[int]]): subset of model indexes.
     """
     models = []
     for i in range(count):
         network_dir = os.path.join('{}{}'.format(prefix, i), 'networks')
         models.append(load_model(species, network_dir))
+
+    if model_indexes is not None and len(model_indexes) > 1:
+        models = [models[i] for i in model_indexes]
+
     return Ensemble(models)
 
 

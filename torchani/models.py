@@ -305,22 +305,33 @@ class BuiltinEnsemble(BuiltinModel):
         return SpeciesEnergies(species, member_atomic_energies)
 
     @classmethod
-    def _from_neurochem_resources(cls, info_file_path, periodic_table_index=False, n_models=8):
+    def _from_neurochem_resources(
+        cls, info_file_path, periodic_table_index=False, model_indexes: Optional[list[int]] = None
+    ):
         from . import neurochem  # noqa
 
         # this is used to load only 1 model (by default model 0)
         const_file, sae_file, ensemble_prefix, ensemble_size = neurochem.parse_neurochem_resources(
             info_file_path
         )
-        if n_models < ensemble_size:
-            ensemble_size = n_models
+
+        model_indexes = (
+            [i for i in model_indexes if 0 <= i <= ensemble_size] if model_indexes is not None else None
+        )
 
         consts = neurochem.Constants(const_file)
         species_converter = SpeciesConverter(consts.species)
         aev_computer = AEVComputer(**consts)
         energy_shifter, sae_dict = neurochem.load_sae(sae_file, return_dict=True)
         species_to_tensor = consts.species_to_tensor
-        neural_networks = neurochem.load_model_ensemble(consts.species, ensemble_prefix, ensemble_size)
+        if model_indexes is not None and len(model_indexes) > 1:
+            neural_networks = neurochem.load_model_ensemble(
+                consts.species, ensemble_prefix, ensemble_size, model_indexes
+            )
+        else:
+            neural_networks = neurochem.load_model_ensemble(
+                consts.species, ensemble_prefix, ensemble_size, model_indexes
+            )
 
         return cls(
             species_converter,
@@ -467,7 +478,7 @@ class BuiltinEnsemble(BuiltinModel):
         return len(self.neural_networks)
 
 
-def ANI1x(periodic_table_index=False, model_index=None):
+def ANI1x(periodic_table_index=False, model_indexes: Optional[list[int]] = None):
     """The ANI-1x model as in `ani-1x_8x on GitHub`_ and `Active Learning Paper`_.
 
     The ANI-1x model is an ensemble of 8 networks that was trained using
@@ -482,12 +493,16 @@ def ANI1x(periodic_table_index=False, model_index=None):
         https://aip.scitation.org/doi/abs/10.1063/1.5023802
     """
     info_file = "ani-1x_8x.info"
-    if model_index is None:
-        return BuiltinEnsemble._from_neurochem_resources(info_file, periodic_table_index)
-    return BuiltinModel._from_neurochem_resources(info_file, periodic_table_index, model_index)
+    if len(model_indexes) == 1:
+        model_index = model_indexes[0] if 0 <= model_indexes[0] <= 7 else 0
+        return BuiltinModel._from_neurochem_resources(info_file, periodic_table_index, model_index)
+    elif len(model_indexes) > 1:
+        return BuiltinEnsemble._from_neurochem_resources(
+            info_file, periodic_table_index, model_indexes=model_indexes
+        )
 
 
-def ANI1ccx(periodic_table_index=False, model_index=None):
+def ANI1ccx(periodic_table_index=False, model_indexes: Optional[list[int]] = None):
     """The ANI-1ccx model as in `ani-1ccx_8x on GitHub`_ and `Transfer Learning Paper`_.
 
     The ANI-1ccx model is an ensemble of 8 networks that was trained
@@ -503,12 +518,16 @@ def ANI1ccx(periodic_table_index=False, model_index=None):
         https://doi.org/10.26434/chemrxiv.6744440.v1
     """
     info_file = "ani-1ccx_8x.info"
-    if model_index is None:
-        return BuiltinEnsemble._from_neurochem_resources(info_file, periodic_table_index)
-    return BuiltinModel._from_neurochem_resources(info_file, periodic_table_index, model_index)
+    if len(model_indexes) == 1:
+        model_index = model_indexes[0] if 0 <= model_indexes[0] <= 7 else 0
+        return BuiltinModel._from_neurochem_resources(info_file, periodic_table_index, model_index)
+    elif len(model_indexes) > 1:
+        return BuiltinEnsemble._from_neurochem_resources(
+            info_file, periodic_table_index, model_indexes=model_indexes
+        )
 
 
-def ANI2x(periodic_table_index=False, model_index=None, n_models=8):
+def ANI2x(periodic_table_index=False, model_indexes: Optional[list[int]] = None):
     """The ANI-2x model as in `ANI2x Paper`_ and `ANI2x Results on GitHub`_.
 
     The ANI-2x model is an ensemble of 8 networks that was trained on the
@@ -523,6 +542,10 @@ def ANI2x(periodic_table_index=False, model_index=None, n_models=8):
         https://doi.org/10.26434/chemrxiv.11819268.v1
     """
     info_file = "ani-2x_8x.info"
-    if model_index is None:
-        return BuiltinEnsemble._from_neurochem_resources(info_file, periodic_table_index, n_models=n_models)
-    return BuiltinModel._from_neurochem_resources(info_file, periodic_table_index, model_index)
+    if len(model_indexes) == 1:
+        model_index = model_indexes[0] if 0 <= model_indexes[0] <= 7 else 0
+        return BuiltinModel._from_neurochem_resources(info_file, periodic_table_index, model_index)
+    elif len(model_indexes) > 1:
+        return BuiltinEnsemble._from_neurochem_resources(
+            info_file, periodic_table_index, model_indexes=model_indexes
+        )
