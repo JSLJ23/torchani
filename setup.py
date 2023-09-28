@@ -12,6 +12,12 @@ FAST_BUILD_CUAEV = '--cuaev' in sys.argv
 if FAST_BUILD_CUAEV:
     sys.argv.remove('--cuaev')
 
+if "BUILD_CUAEV_ALL_SM" in os.environ:
+    BUILD_CUAEV_ALL_SM = True
+
+if "FAST_BUILD_CUAEV" in os.environ:
+    FAST_BUILD_CUAEV = True
+
 # Use along with --cuaev for CI test to reduce compilation time on Non-GPUs system
 ONLY_BUILD_SM80 = '--only-sm80' in sys.argv
 if ONLY_BUILD_SM80:
